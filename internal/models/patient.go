@@ -1,6 +1,6 @@
 package models
 
-type Patient struct {
+type PatientRequest struct {
 	ClientID       string `json:"client_id" required:"true"`
 	FirstName      string `json:"first_name" required:"true"`
 	LastName       string `json:"last_name" required:"true"`
