@@ -10,8 +10,9 @@ import (
 
 type PatientsRepository interface {
 	Save(ctx context.Context, p *models.Patient) error
-	Get(ctx context.Context, id string) (*models.Patient, error)
-	Update(ctx context.Context, p *models.Patient) error
+	GetByID(ctx context.Context, id string) (*models.Patient, error)
+	GetByClientID(ctx context.Context, clientID string) ([]*models.Patient, error)
+	GetByDocument(ctx context.Context, docType, docNumber string) (*models.Patient, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -23,11 +24,11 @@ type PatientsService interface {
 }
 
 type Patients struct {
-	Logger             *zap.Logger
+	Logger             *zap.SugaredLogger
 	PatientsRepository PatientsRepository
 }
 
-func New(logger *zap.Logger, repository PatientsRepository) PatientsService {
+func New(logger *zap.SugaredLogger, repository PatientsRepository) PatientsService {
 	return &Patients{
 		Logger:             logger,
 		PatientsRepository: repository,
@@ -77,5 +78,7 @@ func (p *Patients) mapRequestToPatient(req *models.PatientRequest) *models.Patie
 		AddressCountry: req.AddressCountry,
 		ZipCode:        req.ZipCode,
 		CreatedAt:      time.Now().Format(time.RFC3339),
+		UpdatedAt:      time.Now().Format(time.RFC3339),
+		Metadata:       req.Metadata,
 	}
 }
