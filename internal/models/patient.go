@@ -21,6 +21,13 @@ type PatientRequest struct {
 	UpdatedAt      string                 `json:"updated_at,omitempty"`
 }
 
+type GetPatientRequest struct {
+	ClientID  string `json:"client_id"`
+	ID        string `json:"id"`
+	DocType   string `json:"doc_type"`
+	DocNumber string `json:"doc_number"`
+}
+
 type Patient struct {
 	ID             string                 `dynamodbav:"id"`
 	ClientID       string                 `dynamodbav:"client_id"`
