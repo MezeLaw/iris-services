@@ -82,18 +82,104 @@ func (p *Patients) GetPatient(ctx context.Context, params *models.GetPatientRequ
 }
 
 func (p *Patients) GetAllPatients(ctx context.Context, identifier string) ([]*models.PatientRequest, error) {
-	//TODO implement me
-	panic("implement me")
+	// Verificar que el identificador no esté vacío
+	if identifier == "" {
+		p.Logger.Error("Error: empty client-id provided to GetAllPatients")
+		return nil, fmt.Errorf("client-id cannot be empty")
+	}
+
+	p.Logger.Info("Getting all patients by ClientID", zap.String("clientID", identifier))
+
+	// Obtener pacientes del repositorio usando el cliente ID
+	patients, err := p.PatientsRepository.GetByClientID(ctx, identifier)
+	if err != nil {
+		p.Logger.Error("Error getting patients by ClientID", zap.String("clientID", identifier), zap.Error(err))
+		return nil, err
+	}
+
+	// Mapear los pacientes del modelo de BD al modelo de request
+	patientRequests := make([]*models.PatientRequest, 0, len(patients))
+	for _, patient := range patients {
+		patientRequests = append(patientRequests, p.mapPatientToRequest(patient))
+	}
+
+	p.Logger.Info("Successfully retrieved patients", zap.Int("count", len(patientRequests)))
+	return patientRequests, nil
 }
 
 func (p *Patients) UpdatePatient(ctx context.Context, request *models.PatientRequest) error {
-	//TODO implement me
-	panic("implement me")
+	// Verificar que el paciente tenga un ID
+	if request.ID == "" {
+		p.Logger.Error("Error: Missing patient ID for update")
+		return fmt.Errorf("patient ID is required for update")
+	}
+
+	p.Logger.Info("Updating patient", zap.String("id", request.ID))
+
+	// Obtener el paciente existente
+	existingPatient, err := p.PatientsRepository.GetByID(ctx, request.ID)
+	if err != nil {
+		p.Logger.Error("Error fetching patient to update", zap.String("id", request.ID), zap.Error(err))
+		return fmt.Errorf("failed to find patient with ID %s: %w", request.ID, err)
+	}
+
+	// Actualizar los campos del paciente existente
+	updatedPatient := &models.Patient{
+		ID:             existingPatient.ID,
+		ClientID:       request.ClientID,
+		FirstName:      request.FirstName,
+		LastName:       request.LastName,
+		DocType:        request.DocType,
+		DocNumber:      request.DocNumber,
+		BirthDate:      request.BirthDate,
+		Gender:         request.Gender,
+		CountryCode:    request.CountryCode,
+		PhoneNumber:    request.PhoneNumber,
+		Email:          request.Email,
+		AddressStreet:  request.AddressStreet,
+		AddressNumber:  request.AddressNumber,
+		AddressCity:    request.AddressCity,
+		AddressCountry: request.AddressCountry,
+		ZipCode:        request.ZipCode,
+		CreatedAt:      existingPatient.CreatedAt,
+		UpdatedAt:      time.Now().Format(time.RFC3339),
+		Metadata:       request.Metadata,
+	}
+
+	// Guardar el paciente actualizado
+	if err := p.PatientsRepository.Save(ctx, updatedPatient); err != nil {
+		p.Logger.Error("Error updating patient", zap.String("id", request.ID), zap.Error(err))
+		return fmt.Errorf("failed to update patient: %w", err)
+	}
+
+	p.Logger.Info("Patient updated successfully", zap.String("id", request.ID))
+	return nil
 }
 
-func (p *Patients) DeletePatient(ctx context.Context, s string) error {
-	//TODO implement me
-	panic("implement me")
+func (p *Patients) DeletePatient(ctx context.Context, id string) error {
+	// Verificar que el ID no esté vacío
+	if id == "" {
+		p.Logger.Error("Error: empty ID provided for patient deletion")
+		return fmt.Errorf("patient ID cannot be empty")
+	}
+
+	p.Logger.Info("Deleting patient", zap.String("id", id))
+
+	// Verificar primero si el paciente existe
+	_, err := p.PatientsRepository.GetByID(ctx, id)
+	if err != nil {
+		p.Logger.Error("Error finding patient to delete", zap.String("id", id), zap.Error(err))
+		return fmt.Errorf("failed to find patient with ID %s: %w", id, err)
+	}
+
+	// Eliminar el paciente
+	if err := p.PatientsRepository.Delete(ctx, id); err != nil {
+		p.Logger.Error("Error deleting patient", zap.String("id", id), zap.Error(err))
+		return fmt.Errorf("failed to delete patient: %w", err)
+	}
+
+	p.Logger.Info("Patient deleted successfully", zap.String("id", id))
+	return nil
 }
 
 func (p *Patients) mapRequestToPatient(req *models.PatientRequest) *models.Patient {
@@ -123,6 +209,7 @@ func (p *Patients) mapRequestToPatient(req *models.PatientRequest) *models.Patie
 func (p *Patients) mapPatientToRequest(patient *models.Patient) *models.PatientRequest {
 	return &models.PatientRequest{
 		ClientID:       patient.ClientID,
+		ID:             patient.ID,
 		FirstName:      patient.FirstName,
 		LastName:       patient.LastName,
 		DocType:        patient.DocType,

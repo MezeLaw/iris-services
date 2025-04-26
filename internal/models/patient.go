@@ -2,6 +2,7 @@ package models
 
 type PatientRequest struct {
 	ClientID       string                 `json:"client_id" required:"true"`
+	ID             string                 `json:"id"`
 	FirstName      string                 `json:"first_name" required:"true"`
 	LastName       string                 `json:"last_name" required:"true"`
 	DocType        string                 `json:"doc_type" required:"true"`
