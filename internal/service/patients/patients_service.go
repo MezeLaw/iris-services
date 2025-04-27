@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/MezeLaw/iris-services/internal/models"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"time"
 )
 
 type PatientsRepository interface {
@@ -38,6 +39,12 @@ func New(logger *zap.SugaredLogger, repository PatientsRepository) PatientsServi
 }
 
 func (p *Patients) CreatePatient(ctx context.Context, request *models.PatientRequest) (*models.PatientRequest, error) {
+	// Validar género
+	if err := validateGender(request.Gender); err != nil {
+		p.Logger.Error("Invalid gender value", zap.String("gender", request.Gender))
+		return nil, err
+	}
+
 	patient := p.mapRequestToPatient(request)
 	if err := p.PatientsRepository.Save(ctx, patient); err != nil {
 		p.Logger.Error("Error on PatientsRepository.Save", zap.Error(err))
@@ -112,6 +119,12 @@ func (p *Patients) UpdatePatient(ctx context.Context, request *models.PatientReq
 	if request.ID == "" {
 		p.Logger.Error("Error: Missing patient ID for update")
 		return fmt.Errorf("patient ID is required for update")
+	}
+
+	// Validar género
+	if err := validateGender(request.Gender); err != nil {
+		p.Logger.Error("Invalid gender value", zap.String("gender", request.Gender))
+		return err
 	}
 
 	p.Logger.Info("Updating patient", zap.String("id", request.ID))
@@ -227,5 +240,14 @@ func (p *Patients) mapPatientToRequest(patient *models.Patient) *models.PatientR
 		CreatedAt:      patient.CreatedAt,
 		UpdatedAt:      patient.UpdatedAt,
 		Metadata:       patient.Metadata,
+	}
+}
+
+func validateGender(gender string) error {
+	switch gender {
+	case models.GenderMale, models.GenderFemale, models.GenderNonBinary:
+		return nil
+	default:
+		return fmt.Errorf("invalid gender value: %s. Must be one of: %s, %s, %s", gender, models.GenderMale, models.GenderFemale, models.GenderNonBinary)
 	}
 }

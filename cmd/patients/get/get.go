@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/MezeLaw/iris-services/internal/handler"
+	handler "github.com/MezeLaw/iris-services/internal/handler/patients"
 	"github.com/MezeLaw/iris-services/internal/models"
-	"github.com/MezeLaw/iris-services/internal/repository"
-	"github.com/MezeLaw/iris-services/internal/service"
+	repository "github.com/MezeLaw/iris-services/internal/repository/patients"
+	service "github.com/MezeLaw/iris-services/internal/service/patients"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"

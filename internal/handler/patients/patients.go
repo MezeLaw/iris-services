@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/MezeLaw/iris-services/internal/models"
 	"go.uber.org/zap"
 )
@@ -33,6 +35,11 @@ func New(service PatientsService, logger *zap.SugaredLogger) PatientsHandler {
 
 func (p *Patients) Create(ctx context.Context, patient *models.PatientRequest) (*models.PatientRequest, error) {
 	p.Logger.Infof("Creating patient: %s", patient)
+	if patient.Gender != models.GenderMale && patient.Gender != models.GenderFemale && patient.Gender != models.GenderNonBinary {
+		err := fmt.Errorf("invalid gender value: %s. Must be one of: %s, %s, %s", patient.Gender, models.GenderMale, models.GenderFemale, models.GenderNonBinary)
+		p.Logger.Error(err)
+		return nil, err
+	}
 	result, err := p.Service.CreatePatient(ctx, patient)
 	if err != nil {
 		p.Logger.Errorf("Error creating patient: %s", err)
@@ -63,6 +70,11 @@ func (p *Patients) GetAll(ctx context.Context, clientID string) ([]*models.Patie
 
 func (p *Patients) Update(ctx context.Context, patient *models.PatientRequest) (*models.PatientRequest, error) {
 	p.Logger.Infof("Updating patient: %s", patient)
+	if patient.Gender != models.GenderMale && patient.Gender != models.GenderFemale && patient.Gender != models.GenderNonBinary {
+		err := fmt.Errorf("invalid gender value: %s. Must be one of: %s, %s, %s", patient.Gender, models.GenderMale, models.GenderFemale, models.GenderNonBinary)
+		p.Logger.Error(err)
+		return nil, err
+	}
 	err := p.Service.UpdatePatient(ctx, patient)
 	if err != nil {
 		p.Logger.Errorf("Error updating patient: %s", err)
