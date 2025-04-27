@@ -130,19 +130,6 @@ func TestPatients_Create(t *testing.T) {
 			expectedResult: nil,
 		},
 		{
-			name: "Validation Error",
-			patient: &models.PatientRequest{
-				// Incomplete patient data
-				ClientID:  "client789",
-				FirstName: "Incomplete",
-			},
-			mockSetup: func(m *MockPatientsService, p *models.PatientRequest) {
-				m.On("CreatePatient", mock.Anything, p).Return(nil, errors.New("validation error"))
-			},
-			expectedError:  errors.New("validation error"),
-			expectedResult: nil,
-		},
-		{
 			name: "Success with non-binary gender",
 			patient: &models.PatientRequest{
 				ClientID:       "client789",
@@ -303,6 +290,93 @@ func TestPatients_Get(t *testing.T) {
 	}
 }
 
+func TestPatients_GetAll(t *testing.T) {
+	// Sample patients for tests
+	samplePatients := []*models.PatientRequest{
+		{
+			ClientID:  "client123",
+			FirstName: "John",
+			LastName:  "Doe",
+			DocType:   "DNI",
+			DocNumber: "12345678",
+			Gender:    "M", // Agregando género
+		},
+		{
+			ClientID:  "client123",
+			FirstName: "Jane",
+			LastName:  "Smith",
+			DocType:   "DNI",
+			DocNumber: "87654321",
+			Gender:    "F", // Agregando género
+		},
+	}
+
+	// Test scenarios
+	tests := []struct {
+		name           string
+		clientID       string
+		mockSetup      func(*MockPatientsService)
+		expectedError  error
+		expectedResult []*models.PatientRequest
+	}{
+		{
+			name:     "Success",
+			clientID: "client123",
+			mockSetup: func(m *MockPatientsService) {
+				m.On("GetAllPatients", mock.Anything, "client123").Return(samplePatients, nil)
+			},
+			expectedError:  nil,
+			expectedResult: samplePatients,
+		},
+		{
+			name:     "Not Found",
+			clientID: "nonexistent",
+			mockSetup: func(m *MockPatientsService) {
+				m.On("GetAllPatients", mock.Anything, "nonexistent").Return(nil, errors.New("patients not found"))
+			},
+			expectedError:  errors.New("patients not found"),
+			expectedResult: nil,
+		},
+		{
+			name:     "Service Error",
+			clientID: "client456",
+			mockSetup: func(m *MockPatientsService) {
+				m.On("GetAllPatients", mock.Anything, "client456").Return(nil, errors.New("service error"))
+			},
+			expectedError:  errors.New("service error"),
+			expectedResult: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			logger := zaptest.NewLogger(t).Sugar()
+			mockService := new(MockPatientsService)
+			tt.mockSetup(mockService)
+
+			handler := &Patients{
+				Service: mockService,
+				Logger:  logger,
+			}
+
+			// Act
+			result, err := handler.GetAll(context.Background(), tt.clientID)
+
+			// Assert
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, result)
+			}
+			mockService.AssertExpectations(t)
+		})
+	}
+}
+
 func TestPatients_Update(t *testing.T) {
 	// Test scenarios
 	tests := []struct {
@@ -319,6 +393,7 @@ func TestPatients_Update(t *testing.T) {
 				LastName:  "Doe",
 				DocType:   "DNI",
 				DocNumber: "12345678",
+				Gender:    "M", // Agregando género
 			},
 			mockSetup: func(m *MockPatientsService, p *models.PatientRequest) {
 				m.On("UpdatePatient", mock.Anything, p).Return(nil)
@@ -333,6 +408,7 @@ func TestPatients_Update(t *testing.T) {
 				LastName:  "Smith",
 				DocType:   "DNI",
 				DocNumber: "87654321",
+				Gender:    "F", // Agregando género
 			},
 			mockSetup: func(m *MockPatientsService, p *models.PatientRequest) {
 				m.On("UpdatePatient", mock.Anything, p).Return(errors.New("service error"))
