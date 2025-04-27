@@ -1,5 +1,11 @@
 package models
 
+const (
+	GenderMale      = "M"
+	GenderFemale    = "F"
+	GenderNonBinary = "NB"
+)
+
 type PatientRequest struct {
 	ClientID       string                 `json:"client_id" required:"true"`
 	ID             string                 `json:"id"`
